@@ -5,7 +5,91 @@ import (
 )
 
 func main() {
-	fmt.Println(getMaxGridHappiness(2, 3, 1, 2)) //240
+	fmt.Println(getMaxGridHappiness(2, 3, 1, 2))
+	// fmt.Println(getMaxGridHappiness(1, 2, 2, 2))
+	// fmt.Println(getMaxGridHappiness(5, 4, 6, 3)) //920
+	// fmt.Println(getMaxGridHappiness(2, 3, 2, 3)) //420
+	// fmt.Println(getMaxGridHappiness(2, 3, 1, 2)) //240
+	// fmt.Println(getMaxGridHappiness(3, 1, 2, 1)) //260
+	// fmt.Println(getMaxGridHappiness(2, 2, 3, 2)) //280
+}
+
+func getMaxGridHappiness(m int, n int, nx int, wx int) int {
+	calcMap := [3][3]int{{0, 0, 0}, {0, -60, -10}, {0, -10, 40}}
+	n3 := 1
+	nn := make([]int, n+1)
+	nn[0] = 1
+	for i := 0; i < n; i++ {
+		n3 *= 3
+		nn[i+1] = n3
+	}
+	ML := n * m
+	type IdxStruct struct {
+		Idx int
+		N   int
+		W   int
+	}
+	preMax := make([][]int, n3)
+	for i := range preMax {
+		preMax[i] = make([]int, (nx+1)*(wx+1))
+	}
+	maxs := make([][]int, n3)
+	for i := range maxs {
+		maxs[i] = make([]int, (nx+1)*(wx+1))
+	}
+	for P := ML - 1; P >= 0; P-- {
+		nidx := n
+		if P < nidx {
+			nidx = P
+		}
+		N := nx
+		if (ML - P) < N {
+			N = ML - P
+		}
+		W := wx
+		if (ML - P) < W {
+			W = ML - P
+		}
+		for idx := 0; idx < nn[nidx]; idx++ {
+			lf, top, calcIdx := idx%3, (idx*3)/n3, (idx*3)%n3
+			if P%n == 0 {
+				lf = 0
+			}
+			for tn := N; tn >= 0; tn-- {
+				for tw := W; tw >= 0; tw-- {
+					max := preMax[calcIdx][tn*(wx+1)+tw]
+					if tn > 0 {
+						if tm := preMax[calcIdx+1][(tn-1)*(wx+1)+tw] + 120 + calcMap[1][lf] + calcMap[1][top]; tm > max {
+							max = tm
+						}
+					}
+					if tw > 0 {
+						if tm := preMax[calcIdx+2][tn*(wx+1)+tw-1] + 40 + calcMap[2][lf] + calcMap[2][top]; tm > max {
+							max = tm
+						}
+					}
+					maxs[idx][tn*(wx+1)+tw] = max
+				}
+			}
+		}
+		preMax, maxs = maxs, preMax
+	}
+	max := 0
+	for _, m := range preMax[0] {
+		if m > max {
+			max = m
+		}
+	}
+	fmt.Println(preMax[0])
+	return max
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+
 }
 func calc(a, b int) int {
 	if a == 0 || b == 0 {
@@ -19,17 +103,11 @@ func calc(a, b int) int {
 	}
 	return -10
 }
-
-func max(a, b int) int {
-	if a > b {
-		return a
+func getMaxGridHappiness1(m int, n int, nx int, wx int) int {
+	n3 := 1
+	for i := 0; i < n; i++ {
+		n3 *= 3
 	}
-	return b
-
-}
-
-func getMaxGridHappiness(m int, n int, nx int, wx int) int {
-	n3 := n * n * n
 	mask_span := make([][]int, n3)
 	highest := n3 / 3
 	truncate := make([][3]int, n3)
@@ -48,9 +126,9 @@ func getMaxGridHappiness(m int, n int, nx int, wx int) int {
 	for i := range dp {
 		dp[i] = make([][][]int, n3)
 		for j := range dp[i] {
-			dp[i][j] = make([][]int, nx)
+			dp[i][j] = make([][]int, nx+1)
 			for k := range dp[i][j] {
-				dp[i][j][k] = make([]int, wx)
+				dp[i][j][k] = make([]int, wx+1)
 				for l := range dp[i][j][k] {
 					dp[i][j][k][l] = -1
 				}
@@ -93,9 +171,5 @@ func getMaxGridHappiness(m int, n int, nx int, wx int) int {
 		dp[pos][borderline][nx][wx] = best
 		return best
 	}
-	fmt.Println(mask_span)
-	fmt.Println(truncate)
-	fmt.Println(dp)
-
 	return dfs(0, 0, nx, wx)
 }
